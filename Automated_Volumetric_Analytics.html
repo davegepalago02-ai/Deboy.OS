@@ -97,6 +97,19 @@
             text-align: center;
             padding: 2rem;
         }
+
+        .math-block {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-size: 1.25rem;
+            margin: 1.5rem 0;
+            text-align: center;
+            color: #1e293b;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+        }
     </style>
 </head>
 
@@ -122,7 +135,7 @@
         <section id="intro" class="bg-white rounded-lg p-8 shadow-sm border-l-4 border-red-500">
             <h2 class="text-3xl font-bold mb-4 text-stone-800">The Challenge: Tropical Cloud Obscuration</h2>
             <p class="text-lg text-stone-600 leading-relaxed mb-6">
-                Monitoring water resources in tropical regions like Northern Mindanao is technically difficult.
+                Monitoring water resources in tropical regions like Mindanao is technically difficult.
                 Persistent <strong>30-40% cloud cover</strong> renders traditional single-date satellite analysis
                 useless. This dashboard presents a <strong>Cloud-Resilient Pipeline</strong> designed to extract
                 precision hydrological metrics despite this environmental noise.
@@ -238,10 +251,11 @@
 
         <!-- PIPELINE EXPLORER -->
         <section id="pipeline" class="bg-white rounded-lg shadow-sm overflow-hidden border border-stone-200">
-            <div class="p-8 border-b border-stone-100 bg-stone-50/50">
-                <h2 class="text-2xl font-bold text-stone-800 mb-2">Technical Solution Architecture</h2>
-                <p class="text-stone-600 text-sm">Interactive breakdown of the automated geospatial processing stages.
-                </p>
+            <div class="p-8 border-b border-stone-100 bg-stone-50/50 text-center">
+                <h2 class="text-2xl font-bold text-stone-800 mb-2">3. The Analytical Workflow: How GEE Processes the
+                    Data</h2>
+                <p class="text-stone-600 text-sm italic max-w-2xl mx-auto">The script follows a rigorous four-stage
+                    pipeline to transform raw satellite signal into hydrological intelligence.</p>
             </div>
 
             <div class="flex flex-col md:flex-row bg-stone-50 border-b border-stone-200">
@@ -362,6 +376,12 @@
                     <div class="bg-stone-800 text-stone-100 px-6 py-3 rounded-full font-bold border border-stone-700">
                         LATENCY: < 10s</div>
                     </div>
+                    <div class="mt-8 pt-8 border-t border-stone-800">
+                        <p class="text-[10px] font-mono text-stone-500 uppercase tracking-widest leading-relaxed">
+                            <i class="fa-solid fa-code mr-2 text-cyan-500"></i> Note: See the JS Script in GEE Project
+                            Module for source code implementation.
+                        </p>
+                    </div>
                 </div>
         </section>
 
@@ -383,24 +403,24 @@
     <script>
         const pipelineData = {
             'mosaic': {
-                title: 'MEDIAN-COMPOSITING MOSAIC',
+                title: 'Stage A: Temporal Synthesis & Spectral Filtering',
                 icon: 'fa-layer-group',
-                desc: 'Instead of relying on single snapshots, the system synthesizes multi-month data composites. This effectively <strong>"sees through"</strong> persistent tropical cloud cover by identifying clear pixels across time.'
+                desc: 'The system queries the Sentinel-2 Level-2A archive. To ensure the collection is "homogeneous," it forces an explicit selection of <strong>Band 3 (Green)</strong> and <strong>Band 8 (NIR)</strong>. A <code>.median()</code> reducer is then applied, which ignores transient cloud/shadow anomalies and keeps only the most statistically persistent ground values for the study period.'
             },
             'bands': {
-                title: 'HOMOGENEOUS BAND CASTING',
+                title: 'Stage B: Hydrological Segmentation',
                 icon: 'fa-code-merge',
-                desc: 'By enforcing explicit spectral selection (<code>B3</code> & <code>B8</code>), the pipeline overcomes the <strong>"Incompatible Band" errors</strong> common between varying Sentinel-2 sensor versions.'
+                desc: 'The system calculates the <strong>Normalized Difference Water Index (NDWI)</strong> to isolate water features. A spatial focal mode filter is applied after thresholding to remove spectral noise (waves or small ponds) before edge extraction.<div class="math-block">NDWI = (Green - NIR) / (Green + NIR)</div>Water features are isolated using a threshold of <code>> 0.05</code>.'
             },
             'edge': {
-                title: 'SUB-PIXEL EDGE DETECTION',
+                title: 'Stage C: Edge-Elevation Fusion',
                 icon: 'fa-water',
-                desc: 'Using the <strong>Canny Edge Detector</strong> on NDWI masks, the pipeline isolates the land-water interface at 10m resolution, ensuring maximum area calculation precision.'
+                desc: 'The <strong>Canny Edge Detector</strong> identifies the zero-meter depth contour (the shoreline). The script then performs a Zonal Statistic (<code>reduceRegion</code>) where it samples the <strong>NASADEM</strong> elevation values at the precise coordinates of the detected shoreline to derive the Water Surface Elevation (WSE).'
             },
             'volume': {
-                title: 'VOLUMETRIC INTEGRATION',
+                title: 'Stage D: Volumetric Calculus',
                 icon: 'fa-cube',
-                desc: 'The final stage fuses the horizontal area footprint with vertical <strong>NASADEM</strong> elevation data, automating the calculation of storage volume without manual intervention.'
+                desc: 'Finally, the system calculates the change in storage by integrating the horizontal shift with the vertical rise using the <strong>Average Area Method</strong>. This allows for multi-year analysis in under 10 seconds.<div class="math-block">Volume Change = ((Area<sub>1</sub> + Area<sub>2</sub>) / 2) * (Elevation<sub>2</sub> - Elevation<sub>1</sub>)</div>'
             }
         };
 
